@@ -14,12 +14,12 @@
 // RUN: | FileCheck %s
 
 func.func @main() {
-  %in1 = memref.alloc() : memref<16x16xf16>
-  %in2 = memref.alloc() : memref<16x16xf32>
-  %out = memref.alloc() : memref<16x16xf32>
+  %0 = memref.alloc() : memref<16x16xf16>
+  %22 = memref.alloc() : memref<16x16xf16>
+  %1 = memref.alloc() : memref<16x16xf32>
 
   %f1 = arith.constant 1.0e+00 : f16
-  %f0 = arith.constant 0.0e+00 : f32
+  %f0 = arith.constant 0.0e+00 : f16
   %c0 = arith.constant 0 : index
   %c16 = arith.constant 16 : index
   %c32 = arith.constant 32 : index
@@ -28,36 +28,45 @@ func.func @main() {
   // Intialize the Input matrix with ones.
   scf.for %arg0 = %c0 to %c16 step %c1 {
     scf.for %arg1 = %c0 to %c16 step %c1 {
-      memref.store %f1, %in1[%arg0, %arg1] : memref<16x16xf16>
+      memref.store %f1, %0[%arg0, %arg1] : memref<16x16xf16>
     }
   }
   // Intialize the accumulator matrix with zeros.
   scf.for %arg0 = %c0 to %c16 step %c1 {
     scf.for %arg1 = %c0 to %c16 step %c1 {
-      memref.store %f0, %in2[%arg0, %arg1] : memref<16x16xf32>
+      memref.store %f0, %22[%arg0, %arg1] : memref<16x16xf16>
     }
   }
 
-  %2 = memref.cast %in1 : memref<16x16xf16> to memref<*xf16>
-  %33 = memref.cast %in2 : memref<16x16xf32> to memref<*xf32>
+  %2 = memref.cast %0 : memref<16x16xf16> to memref<*xf16>
+  %33 = memref.cast %22 : memref<16x16xf16> to memref<*xf16>
+  %3 = memref.cast %1 : memref<16x16xf32> to memref<*xf32>
   gpu.host_register %2 : memref<*xf16>
-  gpu.host_register %33 : memref<*xf32>
+  gpu.host_register %33 : memref<*xf16>
 
   gpu.launch blocks(%bx, %by, %bz) in (%grid_x = %c1, %grid_y = %c1, %grid_z = %c1)
              threads(%tx, %ty, %tz) in (%block_x = %c32, %block_y = %c1, %block_z = %c1) {
-    // run on tensor core 
-    %A = gpu.subgroup_mma_load_matrix %in1[%c0, %c0] {leadDimension = 16 : index} : memref<16x16xf16> -> !gpu.mma_matrix<16x16xf16, "AOp">
-    %B = gpu.subgroup_mma_load_matrix %in1[%c0, %c0] {leadDimension = 16 : index} : memref<16x16xf16> -> !gpu.mma_matrix<16x16xf16, "BOp">
-    %C = gpu.subgroup_mma_load_matrix %in2[%c0, %c0] {leadDimension = 16 : index} : memref<16x16xf32> -> !gpu.mma_matrix<16x16xf32, "COp">
+    %A = gpu.subgroup_mma_load_matrix %0[%c0, %c0] {leadDimension = 16 : index} : memref<16x16xf16> -> !gpu.mma_matrix<16x16xf16, "AOp">
+    %B = gpu.subgroup_mma_load_matrix %0[%c0, %c0] {leadDimension = 16 : index} : memref<16x16xf16> -> !gpu.mma_matrix<16x16xf16, "BOp">
+    %C = gpu.subgroup_mma_load_matrix %22[%c0, %c0] {leadDimension = 16 : index} : memref<16x16xf16> -> !gpu.mma_matrix<16x16xf16, "COp">
 
-    %R = gpu.subgroup_mma_compute %A, %B, %C : !gpu.mma_matrix<16x16xf16, "AOp">, !gpu.mma_matrix<16x16xf16, "BOp"> -> !gpu.mma_matrix<16x16xf32, "COp">
+    %R = gpu.subgroup_mma_compute %A, %B, %C : !gpu.mma_matrix<16x16xf16, "AOp">, !gpu.mma_matrix<16x16xf16, "BOp"> -> !gpu.mma_matrix<16x16xf16, "COp">
 
-    gpu.subgroup_mma_store_matrix %R, %in2[%c0, %c0] {leadDimension = 16 : index}: !gpu.mma_matrix<16x16xf32, "COp">, memref<16x16xf32>
-
+    gpu.subgroup_mma_store_matrix %R, %0[%c0, %c0] {leadDimension = 16 : index}: !gpu.mma_matrix<16x16xf16, "COp">, memref<16x16xf16>
     gpu.terminator
   }
+
+  // Convert the results from f16 to f32 for printing.
+  scf.for %arg0 = %c0 to %c16 step %c1 {
+    scf.for %arg1 = %c0 to %c16 step %c1 {
+      %6 = memref.load %0[%arg0, %arg1] : memref<16x16xf16>
+      %7 = arith.extf %6 : f16 to f32
+      memref.store %7, %1[%arg0, %arg1] : memref<16x16xf32>
+    }
+  }
+
   // Print the memref after computation.
-  call @printMemrefF32(%33) : (memref<*xf32>) -> ()
+  call @printMemrefF32(%3) : (memref<*xf32>) -> ()
   // CHECK: [16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16],
   // CHECK-NEXT: [16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16],
   // CHECK-NEXT: [16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16,   16],
