@@ -4,3 +4,4 @@
 *.ll
 */*_llvm.mlir
 */spmm
+*/exec
