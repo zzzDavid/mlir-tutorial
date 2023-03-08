@@ -8,7 +8,7 @@ This tutorial covers four exercises with MLIR:
 3. Matrix multiply on GPU
 4. Sparse matrix multiply with Sparlay dialect
 
-## Set up the environment
+## Set up environment
 We have installed necessary tools on zhang-capra-xcel, you only need to copy the project and source a script.
 
 Step 1: log in to `zhang-capra-xcel`
