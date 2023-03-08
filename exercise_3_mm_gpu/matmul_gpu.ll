@@ -257,7 +257,7 @@ declare void @mgpuModuleUnload(ptr)
 !1 = !DIFile(filename: "LLVMDialectModule", directory: "/")
 !2 = !{i32 2, !"Debug Info Version", i32 3}
 !3 = distinct !DISubprogram(name: "main", linkageName: "main", scope: null, file: !4, line: 5, type: !5, scopeLine: 5, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !0, retainedNodes: !6)
-!4 = !DIFile(filename: "matmul_gpu_llvm.mlir", directory: "/work/shared/users/phd/jl3952/tutorials/mlir-tutorial/exercise_3_mm_gpu")
+!4 = !DIFile(filename: "matmul_gpu_llvm.mlir", directory: "/home/nz264/shared/mlir-tutorial/exercise_3_mm_gpu")
 !5 = !DISubroutineType(types: !6)
 !6 = !{}
 !7 = !DILocation(line: 13, column: 10, scope: !8)
