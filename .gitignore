@@ -3,3 +3,4 @@
 */*.o
 *.ll
 */*_llvm.mlir
+*/spmm
