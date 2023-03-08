@@ -2,3 +2,4 @@
 */scalar-vector-opt
 */*.o
 *.ll
+*/*_llvm.mlir
