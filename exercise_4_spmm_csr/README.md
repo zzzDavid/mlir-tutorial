@@ -1,11 +1,34 @@
+# Sparse Matrix Multiply on GPU
 
-## Steps
-$ ssh netID@zhang-capra-xcel.ece.cornell.edu
+## Files and what they do
+- `compile.sh`: a script that compiles MLIR IR to binary executable
+- `spmm_csr.mlir`: matrix multiply program on GPU
 
-$ source config.sh
+## Compilation results
+- `spmm`: the executable
+- `spmm_llvm.mlir`: the program in LLVM dialect after lowering
+- `spmm.o`: object file
 
-$ sparlay-opt ./spmm_csr.mlir -sparlay-codegen -lower-format-conversion -lower-struct -dce | mlir-opt -one-shot-bufferize="bufferize-function-boundaries=1 allow-return-allocs unknown-type-conversion=identity-layout-map function-boundary-type-conversion=identity-layout-map" -finalizing-bufferize -convert-linalg-to-loops -convert-vector-to-scf -convert-scf-to-cf -lower-affine -convert-vector-to-llvm -convert-memref-to-llvm -convert-complex-to-standard -convert-math-to-llvm -convert-math-to-libm -convert-complex-to-libm -convert-complex-to-llvm -convert-func-to-llvm -reconcile-unrealized-casts  | mlir-translate -mlir-to-llvmir | opt -O3 -S | llc -O3 -relocation-model=pic -filetype=obj -o spmm.o
+## Run the experiments
+Step 1: compile
 
-$ clang++ spmm.o -L$SPLHOME/build/lib -lmlir_sparlay_runner_utils -L$LLVMHOME/build/lib -lmlir_runner_utils -lmlir_c_runner_utils -o spmm
+```sh
+./compile.sh
+```
 
-$ ./spmm
+
+Step 2: run exec
+```sh
+./spmm
+```
+
+## Explanations
+
+This MLIR code defines an implementation of the sparse matrix multiplication algorithm for compressed sparse row (CSR) format. It includes the following:
+
+- Definition of the COO and CSR sparse matrix formats.
+- Definition of an index map for three operands: A (CSR matrix), B (dense matrix), and X (output matrix).
+- A kernel function kernel_csr_spmm that takes the operands, performs sparse matrix multiplication, and returns the result as a dense matrix.
+
+In the main function, it loads a CSR matrix from a file, creates a dense matrix for operand B, initializes the output matrix, calls the kernel_csr_spmm function, and prints the execution time and the result. Finally, it deallocates the resources.
+It uses various MLIR dialects such as sparlay, linalg, arith, vector, and scf.
