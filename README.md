@@ -8,11 +8,13 @@ This tutorial covers four exercises with MLIR:
 
 ## Set up the environment
 
-Step 1: log in on zhang-capra-xcel
+Step 1: log in to zhang-capra-xcel
+
 Step 2: copy the project from common directory to a place you like the most
 ```sh
 cp -r /work/shared/common/mlir-tutorial ./
 ```
+
 Step 3: go to the tutorial directory, source a script
 ```sh
 cd mlir-tutorial
